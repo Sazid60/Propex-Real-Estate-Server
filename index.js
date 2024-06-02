@@ -30,6 +30,7 @@ async function run() {
         await client.connect();
 
         const usersCollection = client.db("Propex").collection("users")
+        const propertyCollection = client.db("Propex").collection("properties")
 
 
         // jwt related API
@@ -89,11 +90,16 @@ async function run() {
             res.send(result)
         })
 
+        // Find User Role
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email
+            const result = await usersCollection.findOne({ email })
+            res.send(result)
+          })
+
         // saving user in database
         app.post('/user', async (req, res) => {
             const user = req.body;
-
-
             const query = { email: user.email }
             const existingUser = await usersCollection.findOne(query);
 
@@ -101,6 +107,13 @@ async function run() {
                 return res.send({ message: 'User Exist', insertedId: null })
             }
             const result = await usersCollection.insertOne(user);
+            res.send(result)
+        })
+
+        // Add a Property
+        app.post('/property', async(req,res)=>{
+            const propertyInfo = req.body;
+            const result = await propertyCollection.insertOne(propertyInfo)
             res.send(result)
         })
 
