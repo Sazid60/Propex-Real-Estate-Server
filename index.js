@@ -117,6 +117,14 @@ async function run() {
             res.send(result)
         })
 
+        // get all user specific properties
+        app.get('/properties/:email', async(req,res)=>{
+            const email = req.params.email
+            const query = {agentEmail:email}
+            const result = await propertyCollection.find(query).toArray()
+            res.send(result)
+        })
+
 
 
 
