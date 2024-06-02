@@ -11,7 +11,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.cjbmdks.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -117,6 +117,12 @@ async function run() {
             res.send(result)
         })
 
+        // get all the properties
+        app.get('/properties', async(req,res)=>{
+            const result = await propertyCollection.find().toArray()
+            res.send(result)
+        })
+
         // get all user specific properties
         app.get('/properties/:email', async(req,res)=>{
             const email = req.params.email
@@ -124,6 +130,14 @@ async function run() {
             const result = await propertyCollection.find(query).toArray()
             res.send(result)
         })
+
+        // delete a property
+        app.delete('/properties/:id', async(req,res)=>{{
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = propertyCollection.deleteOne(query)
+            res.send(result)
+        }})
 
 
 
