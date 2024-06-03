@@ -134,7 +134,7 @@ async function run() {
         // get a property
         app.get('/single-property/:id', async (req, res) => {
             const id = req.params.id
-            console.log(id)
+            // console.log(id)
             const query = { _id: new ObjectId(id) }
             const result = await propertyCollection.findOne(query)
             res.send(result)
@@ -144,7 +144,6 @@ async function run() {
         app.delete('/properties/:id', async (req, res) => {
             {
                 const id = req.params.id
-
                 const query = { _id: new ObjectId(id) }
                 const result = propertyCollection.deleteOne(query)
                 res.send(result)
@@ -163,8 +162,20 @@ async function run() {
             res.send(result)
         })
 
+        // verify property
+        app.patch('/property/verify/:id', async(req,res)=>{
+                const id = req.params.id
+                // console.log(id)
+                const { verification_status } = req.body;
+                console.log(verification_status)
 
-
+                const query = { _id: new ObjectId(id) }
+                const updateDoc = {
+                  $set: { verification_status: verification_status },
+                }
+                const result = await propertyCollection.updateOne(query, updateDoc)
+                res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
