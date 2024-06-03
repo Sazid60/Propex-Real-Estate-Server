@@ -109,6 +109,16 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.send(result)
         })
+        
+        // delete a user 
+        app.delete('/user/:id', async (req, res) => {
+            {
+                const id = req.params.id
+                const query = { _id: new ObjectId(id) }
+                const result = usersCollection.deleteOne(query)
+                res.send(result)
+            }
+        })
 
         // Add a Property
         app.post('/property', async (req, res) => {
@@ -163,18 +173,18 @@ async function run() {
         })
 
         // verify property
-        app.patch('/property/verify/:id', async(req,res)=>{
-                const id = req.params.id
-                // console.log(id)
-                const { verification_status } = req.body;
-                console.log(verification_status)
+        app.patch('/property/verify/:id', async (req, res) => {
+            const id = req.params.id
+            // console.log(id)
+            const { verification_status } = req.body;
+            console.log(verification_status)
 
-                const query = { _id: new ObjectId(id) }
-                const updateDoc = {
-                  $set: { verification_status: verification_status },
-                }
-                const result = await propertyCollection.updateOne(query, updateDoc)
-                res.send(result)
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { verification_status: verification_status },
+            }
+            const result = await propertyCollection.updateOne(query, updateDoc)
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
