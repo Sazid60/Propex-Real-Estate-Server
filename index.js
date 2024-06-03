@@ -161,10 +161,17 @@ async function run() {
                 $set: { status: status },
             }
             const result = await usersCollection.updateOne(query, updateDoc)
-            
+
             // delete all property added by the user
             const deleteResult = await propertyCollection.deleteMany({ agentEmail: email })
             res.send(result)
+        })
+
+        // find a fraud
+        app.get('/user/fraudCheck/:email', async (req, res) => {
+            const email = req.params.email;
+            const fraudUser = await usersCollection.findOne({ email });
+            res.send(fraudUser)
         })
 
         // Add a Property
