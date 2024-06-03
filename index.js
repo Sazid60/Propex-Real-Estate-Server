@@ -150,6 +150,23 @@ async function run() {
             res.send(result)
         })
 
+        // mark as fraud
+        app.patch('/users/fraud/:id', async (req, res) => {
+            const id = req.params.id
+            // console.log(id)
+            const {status,email} = req.body;
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { status: status },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            
+            // delete all property added by the user
+            const deleteResult = await propertyCollection.deleteMany({ agentEmail: email })
+            res.send(result)
+        })
+
         // Add a Property
         app.post('/property', async (req, res) => {
             const propertyInfo = req.body;
