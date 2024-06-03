@@ -95,7 +95,7 @@ async function run() {
             const email = req.params.email
             const result = await usersCollection.findOne({ email })
             res.send(result)
-          })
+        })
 
         // saving user in database
         app.post('/user', async (req, res) => {
@@ -111,33 +111,57 @@ async function run() {
         })
 
         // Add a Property
-        app.post('/property', async(req,res)=>{
+        app.post('/property', async (req, res) => {
             const propertyInfo = req.body;
             const result = await propertyCollection.insertOne(propertyInfo)
             res.send(result)
         })
 
         // get all the properties
-        app.get('/properties', async(req,res)=>{
+        app.get('/properties', async (req, res) => {
             const result = await propertyCollection.find().toArray()
             res.send(result)
         })
 
         // get all user specific properties
-        app.get('/properties/:email', async(req,res)=>{
+        app.get('/properties/:email', async (req, res) => {
             const email = req.params.email
-            const query = {agentEmail:email}
+            const query = { agentEmail: email }
             const result = await propertyCollection.find(query).toArray()
             res.send(result)
         })
 
-        // delete a property
-        app.delete('/properties/:id', async(req,res)=>{{
+        // get a property
+        app.get('/single-property/:id', async (req, res) => {
             const id = req.params.id
+            console.log(id)
             const query = { _id: new ObjectId(id) }
-            const result = propertyCollection.deleteOne(query)
+            const result = await propertyCollection.findOne(query)
             res.send(result)
-        }})
+        })
+
+        // delete a property
+        app.delete('/properties/:id', async (req, res) => {
+            {
+                const id = req.params.id
+
+                const query = { _id: new ObjectId(id) }
+                const result = propertyCollection.deleteOne(query)
+                res.send(result)
+            }
+        })
+
+        // update a property
+        app.put('/property/update/:id', async (req, res) => {
+            const id = req.params.id
+            const propertyData = req.body
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: propertyData,
+            }
+            const result = await propertyCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
 
 
 
