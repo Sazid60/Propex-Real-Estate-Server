@@ -109,7 +109,7 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.send(result)
         })
-        
+
         // delete a user 
         app.delete('/user/:id', async (req, res) => {
             {
@@ -118,6 +118,36 @@ async function run() {
                 const result = usersCollection.deleteOne(query)
                 res.send(result)
             }
+        })
+
+        // update role to admin
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id
+            // console.log(id)
+            const { role } = req.body;
+            console.log(role)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { role: role },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        // update role to agent
+        app.patch('/users/agent/:id', async (req, res) => {
+            const id = req.params.id
+            // console.log(id)
+            const { role } = req.body;
+            console.log(role)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { role: role },
+            }
+            const result = await usersCollection.updateOne(query, updateDoc)
+            res.send(result)
         })
 
         // Add a Property
@@ -172,7 +202,7 @@ async function run() {
             res.send(result)
         })
 
-        // verify property
+        // verify property verify status
         app.patch('/property/verify/:id', async (req, res) => {
             const id = req.params.id
             // console.log(id)
