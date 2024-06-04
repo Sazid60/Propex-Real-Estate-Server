@@ -31,6 +31,7 @@ async function run() {
 
         const usersCollection = client.db("Propex").collection("users")
         const propertyCollection = client.db("Propex").collection("properties")
+        const reviewCollection = client.db("Propex").collection("reviews")
 
 
         // jwt related API
@@ -121,7 +122,7 @@ async function run() {
         })
 
         // update role to admin
-        app.patch('/users/admin/:id', async (req, res) => {
+        app.patch('/users/admin/:id',verifyToken,verifyAdmin, async (req, res) => {
             const id = req.params.id
             // console.log(id)
             const { role } = req.body;
@@ -136,7 +137,7 @@ async function run() {
         })
 
         // update role to agent
-        app.patch('/users/agent/:id', async (req, res) => {
+        app.patch('/users/agent/:id',verifyToken,verifyAdmin, async (req, res) => {
             const id = req.params.id
             // console.log(id)
             const { role } = req.body;
@@ -182,7 +183,7 @@ async function run() {
         })
 
         // get all the properties
-        app.get('/properties',verifyToken, async (req, res) => {
+        app.get('/properties', async (req, res) => {
             const result = await propertyCollection.find().toArray()
             res.send(result)
         })
@@ -239,6 +240,37 @@ async function run() {
             }
             const result = await propertyCollection.updateOne(query, updateDoc)
             res.send(result)
+        })
+
+        // add a review
+        app.post('/review',verifyToken, async(req,res)=>{
+            const reviewDetails = req.body
+            const result = await reviewCollection.insertOne(reviewDetails)
+            res.send(result)
+        })
+
+        // get property specific reviews
+        app.get('/reviews/:propertyId', async(req,res)=>{
+            const propertyId = req.params.propertyId;
+            const query = { reviewedPropertyId : propertyId }
+            const result = await reviewCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // Get All The Reviews
+        app.get('/reviews', async(req,res)=>{
+            const result = await reviewCollection.find().toArray()
+            res.send(result)
+        })
+
+        // delete a review
+        app.delete('/review/:id', async (req, res) => {
+            {
+                const id = req.params.id
+                const query = { _id: new ObjectId(id) }
+                const result = reviewCollection.deleteOne(query)
+                res.send(result)
+            }
         })
 
         // Send a ping to confirm a successful connection
