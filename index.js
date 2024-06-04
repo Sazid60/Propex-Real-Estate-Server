@@ -242,6 +242,21 @@ async function run() {
             res.send(result)
         })
 
+        // advertise a property
+        app.patch('/property/advertise/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id
+            // console.log(id)
+            const { advertised } = req.body;
+            console.log(advertised)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { advertised: advertised },
+            }
+            const result = await propertyCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
         // add a review
         app.post('/review', verifyToken, async (req, res) => {
             const reviewDetails = req.body
