@@ -91,7 +91,7 @@ async function run() {
         })
 
         // Find User Role
-        app.get('/user/:email', async (req, res) => {
+        app.get('/user/:email',verifyToken, async (req, res) => {
             const email = req.params.email
             const result = await usersCollection.findOne({ email })
             res.send(result)
@@ -111,7 +111,7 @@ async function run() {
         })
 
         // delete a user 
-        app.delete('/user/:id', async (req, res) => {
+        app.delete('/user/:id',verifyToken,verifyAdmin, async (req, res) => {
             {
                 const id = req.params.id
                 const query = { _id: new ObjectId(id) }
@@ -151,7 +151,7 @@ async function run() {
         })
 
         // mark as fraud
-        app.patch('/users/fraud/:id', async (req, res) => {
+        app.patch('/users/fraud/:id',verifyToken,verifyAdmin, async (req, res) => {
             const id = req.params.id
             // console.log(id)
             const {status,email} = req.body;
@@ -175,20 +175,20 @@ async function run() {
         })
 
         // Add a Property
-        app.post('/property', async (req, res) => {
+        app.post('/property',verifyToken,verifyAgent, async (req, res) => {
             const propertyInfo = req.body;
             const result = await propertyCollection.insertOne(propertyInfo)
             res.send(result)
         })
 
         // get all the properties
-        app.get('/properties', async (req, res) => {
+        app.get('/properties',verifyToken, async (req, res) => {
             const result = await propertyCollection.find().toArray()
             res.send(result)
         })
 
         // get all user specific properties
-        app.get('/properties/:email', async (req, res) => {
+        app.get('/properties/:email',verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { agentEmail: email }
             const result = await propertyCollection.find(query).toArray()
@@ -196,7 +196,7 @@ async function run() {
         })
 
         // get a property
-        app.get('/single-property/:id', async (req, res) => {
+        app.get('/single-property/:id',verifyToken, async (req, res) => {
             const id = req.params.id
             // console.log(id)
             const query = { _id: new ObjectId(id) }
@@ -205,7 +205,7 @@ async function run() {
         })
 
         // delete a property
-        app.delete('/properties/:id', async (req, res) => {
+        app.delete('/properties/:id',verifyToken,verifyAgent, async (req, res) => {
             {
                 const id = req.params.id
                 const query = { _id: new ObjectId(id) }
@@ -215,7 +215,7 @@ async function run() {
         })
 
         // update a property
-        app.put('/property/update/:id', async (req, res) => {
+        app.put('/property/update/:id',verifyToken,verifyAgent, async (req, res) => {
             const id = req.params.id
             const propertyData = req.body
             const query = { _id: new ObjectId(id) }
@@ -227,7 +227,7 @@ async function run() {
         })
 
         // verify property verify status
-        app.patch('/property/verify/:id', async (req, res) => {
+        app.patch('/property/verify/:id',verifyToken,verifyAdmin, async (req, res) => {
             const id = req.params.id
             // console.log(id)
             const { verification_status } = req.body;
