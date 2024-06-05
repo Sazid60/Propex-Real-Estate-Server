@@ -32,6 +32,8 @@ async function run() {
         const usersCollection = client.db("Propex").collection("users")
         const propertyCollection = client.db("Propex").collection("properties")
         const reviewCollection = client.db("Propex").collection("reviews")
+        const wishlistCollection = client.db("Propex").collection("wishlist")
+        const offeringCollection = client.db("Propex").collection("offerings")
 
 
         // jwt related API
@@ -279,7 +281,7 @@ async function run() {
         })
 
         // get User Specific reviews
-        app.get('/reviews/:email', async (req, res) => {
+        app.get('/userReview/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             console.log(email)
             const query = { reviewerEmail: email }
@@ -288,13 +290,60 @@ async function run() {
         })
 
         // delete a review
-        app.delete('/review/:id', async (req, res) => {
+        app.delete('/review/:id', verifyToken, async (req, res) => {
             {
                 const id = req.params.id
                 const query = { _id: new ObjectId(id) }
-                const result = reviewCollection.deleteOne(query)
+                const result = await reviewCollection.deleteOne(query)
                 res.send(result)
             }
+        })
+
+        // all to wishlist
+        app.post('/wishlist-property', verifyToken, async (req, res) => {
+            const wished_property = req.body;
+            const result = await wishlistCollection.insertOne(wished_property)
+            res.send(result)
+        })
+
+        // get user specific wishlist
+        app.get('/wishes', async (req, res) => {
+            const email = req.query.email
+            console.log(email)
+            const query = { wisherEmail: email }
+            const result = await wishlistCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // get specific user Id 
+        app.get('/wishes/:id',async(req,res)=>{
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await wishlistCollection.findOne(query)
+            res.send(result)
+        })
+
+        // delete a property from wishlist
+        app.delete('/wishes/:id', verifyToken, async (req, res) => {
+            {
+                const id = req.params.id
+                const query = { _id: new ObjectId(id) }
+                const result = await wishlistCollection.deleteOne(query)
+                res.send(result)
+            }
+        })
+
+        // add a property to offered list
+        app.post('/offerings', async(req,res)=>{
+            const offeredInfo = req.body
+            const result = await offeringCollection.insertOne(offeredInfo)
+            const wishId = offeredInfo.wishId;
+
+            const query = { _id: new ObjectId(wishId ) }
+            const deletedResult = await wishlistCollection.deleteOne(query)
+            
+            console.log(wishId)
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
