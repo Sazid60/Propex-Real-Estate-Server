@@ -167,6 +167,9 @@ async function run() {
 
             // delete all property added by the user
             const deleteResult = await propertyCollection.deleteMany({ agentEmail: email })
+            // TODO: delete from Offered Collection and Wishlist
+            const deletedOffered = await offeringCollection.deleteMany({ agentEmail: email })
+            const deletedWishlist = await wishlistCollection.deleteMany({ agentEmail: email })
             res.send(result)
         })
 
@@ -334,17 +337,24 @@ async function run() {
         })
 
         // add a property to offered list
-        app.post('/offerings', async(req,res)=>{
+        app.post('/offerings',verifyToken, async(req,res)=>{
             const offeredInfo = req.body
             const result = await offeringCollection.insertOne(offeredInfo)
             const wishId = offeredInfo.wishId;
-
-            const query = { _id: new ObjectId(wishId ) }
+            const query = { _id: new ObjectId(wishId) }
             const deletedResult = await wishlistCollection.deleteOne(query)
-            
             console.log(wishId)
             res.send(result)
         })
+
+        // get user specific offered property
+        app.get('/offerings/:email', async(req,res)=>{
+            const buyerEmail = req.params.email
+            const query = { buyerEmail: buyerEmail }
+            const result = await offeringCollection.find(query).toArray()
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
