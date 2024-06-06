@@ -52,7 +52,7 @@ async function run() {
                 return res.status(401).send({ message: 'unauthorized access' });
             }
             const token = req.headers.authorization.split(' ')[1];
-            console.log(token)
+            // console.log(token)
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if (err) {
                     return res.status(401).send({ message: 'unauthorized access' })
@@ -168,7 +168,7 @@ async function run() {
             // delete all property added by the user
             const deleteResult = await propertyCollection.deleteMany({ agentEmail: email })
             // TODO: delete from Offered Collection and Wishlist
-            const deletedOffered = await offeringCollection.deleteMany({ agentEmail: email })
+            // const deletedOffered = await offeringCollection.deleteMany({ agentEmail: email })
             const deletedWishlist = await wishlistCollection.deleteMany({ agentEmail: email })
             res.send(result)
         })
@@ -319,7 +319,7 @@ async function run() {
         })
 
         // get specific user Id 
-        app.get('/wishes/:id',async(req,res)=>{
+        app.get('/wishes/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await wishlistCollection.findOne(query)
@@ -337,7 +337,7 @@ async function run() {
         })
 
         // add a property to offered list
-        app.post('/offerings',verifyToken, async(req,res)=>{
+        app.post('/offerings', verifyToken, async (req, res) => {
             const offeredInfo = req.body
             const result = await offeringCollection.insertOne(offeredInfo)
             const wishId = offeredInfo.wishId;
@@ -348,13 +348,59 @@ async function run() {
         })
 
         // get user specific offered property
-        app.get('/offerings/:email', async(req,res)=>{
+        app.get('/offerings/:email', verifyToken, async (req, res) => {
             const buyerEmail = req.params.email
             const query = { buyerEmail: buyerEmail }
             const result = await offeringCollection.find(query).toArray()
             res.send(result)
         })
 
+        // get all oferings
+        app.get('/getOfferings', verifyToken, verifyAgent, async (req, res) => {
+            const agentEmail = req.query.agentEmail;
+            const query = { agentEmail: agentEmail }
+            console.log(agentEmail)
+            const result = await offeringCollection.find(query).toArray()
+            console.log(result)
+            res.send(result)
+        })
+
+        // update a rejected status of a offering
+        app.patch('/rejectOffering/:id', verifyToken, verifyAgent, async (req, res) => {
+            const id = req.params.id;
+
+            const { status } = req.body;
+            console.log(status)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { status: status },
+            }
+            const result = await offeringCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        // Accept Offering
+        app.patch('/acceptOffering', verifyToken, verifyAgent, async (req, res) => {
+            const { id, status, propertyId } = req.body;
+            console.log(propertyId)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: { status: status },
+            }
+            const result = await offeringCollection.updateOne(query, updateDoc)
+
+            // reject all the offers for the property
+
+            const rejectQuery = { propertyId: propertyId, _id: { $ne: new ObjectId(id) } }; 
+            const rejectDoc = {
+                $set: { status: 'rejected' }, // Set their status to "rejected"
+            };
+            const rejectResult = await offeringCollection.updateMany(rejectQuery, rejectDoc);
+
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
