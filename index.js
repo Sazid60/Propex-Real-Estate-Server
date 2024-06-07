@@ -4,6 +4,8 @@ const cors = require('cors')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+
 const port = process.env.PORT || 5000
 
 // Middleware
@@ -34,16 +36,20 @@ async function run() {
         const reviewCollection = client.db("Propex").collection("reviews")
         const wishlistCollection = client.db("Propex").collection("wishlist")
         const offeringCollection = client.db("Propex").collection("offerings")
+        const paymentsCollection = client.db("Propex").collection("payments")
 
 
         // jwt related API
         app.post('/jwt', async (req, res) => {
             const user = req.body
+            // console.log(user)
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: '1h'
+                expiresIn: '365d'
             })
             res.send({ token })
         })
+
+
 
         // middlewares 
         const verifyToken = (req, res, next) => {
@@ -55,7 +61,9 @@ async function run() {
             // console.log(token)
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if (err) {
+                    console.log(err)
                     return res.status(401).send({ message: 'unauthorized access' })
+
                 }
                 req.decoded = decoded;
                 next();
@@ -86,6 +94,23 @@ async function run() {
             next();
         }
 
+        // create-payment-intent
+        app.post('/create-payment-intent', verifyToken, async (req, res) => {
+            const price = req.body.price
+            const priceInCent = parseFloat(price) * 100
+            if (!price || priceInCent < 1) return
+            // generate clientSecret
+            const { client_secret } = await stripe.paymentIntents.create({
+                amount: priceInCent,
+                currency: 'usd',
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+            })
+            // send client secret as response
+            res.send({ clientSecret: client_secret })
+        })
+
         // Get All users
         app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
 
@@ -94,7 +119,7 @@ async function run() {
         })
 
         // Find User Role
-        app.get('/user/:email', verifyToken, async (req, res) => {
+        app.get('/user/:email', async (req, res) => {
             const email = req.params.email
             const result = await usersCollection.findOne({ email })
             res.send(result)
@@ -188,7 +213,13 @@ async function run() {
         })
 
         // get all the properties
-        app.get('/properties', async (req, res) => {
+        app.get('/properties', verifyToken, async (req, res) => {
+            const result = await propertyCollection.find().toArray()
+            res.send(result)
+        })
+
+        // get all the properties
+        app.get('/advertisedProperties', async (req, res) => {
             const result = await propertyCollection.find().toArray()
             res.send(result)
         })
@@ -310,7 +341,7 @@ async function run() {
         })
 
         // get user specific wishlist
-        app.get('/wishes', async (req, res) => {
+        app.get('/wishes', verifyToken, async (req, res) => {
             const email = req.query.email
             console.log(email)
             const query = { wisherEmail: email }
@@ -393,7 +424,7 @@ async function run() {
 
             // reject all the offers for the property
 
-            const rejectQuery = { propertyId: propertyId, _id: { $ne: new ObjectId(id) } }; 
+            const rejectQuery = { propertyId: propertyId, _id: { $ne: new ObjectId(id) } };
             const rejectDoc = {
                 $set: { status: 'rejected' }, // Set their status to "rejected"
             };
@@ -401,6 +432,38 @@ async function run() {
 
             res.send(result)
         })
+
+        // get Property for payment
+        app.get('/buyingProperty/:id', verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await offeringCollection.findOne(query)
+            res.send(result)
+        })
+
+        // Save in payment db
+        app.post('/soldProperties', verifyToken, async (req, res) => {
+            const paymentInfo = req.body;
+            const result = await paymentsCollection.insertOne(paymentInfo)
+            res.send(result)
+        })
+        //  set status after payment of offering collection
+        app.patch('/after-payment-status', verifyToken, async (req, res) => {
+            const {  status, id,transactionId } = req.body;
+
+            console.log(status)
+
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                     status: status,
+                     transactionId:transactionId,
+                     },
+            }
+            const result = await offeringCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
