@@ -168,7 +168,7 @@ async function run() {
             const id = req.params.id
             // console.log(id)
             const { role } = req.body;
-            console.log(role)
+            // console.log(role)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -268,7 +268,7 @@ async function run() {
             const id = req.params.id
             // console.log(id)
             const { verification_status } = req.body;
-            console.log(verification_status)
+            // console.log(verification_status)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -283,7 +283,7 @@ async function run() {
             const id = req.params.id
             // console.log(id)
             const { advertised } = req.body;
-            console.log(advertised)
+            // console.log(advertised)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -317,7 +317,7 @@ async function run() {
         // get User Specific reviews
         app.get('/userReview/:email', verifyToken, async (req, res) => {
             const email = req.params.email
-            console.log(email)
+            // console.log(email)
             const query = { reviewerEmail: email }
             const result = await reviewCollection.find(query).toArray()
             res.send(result)
@@ -343,7 +343,7 @@ async function run() {
         // get user specific wishlist
         app.get('/wishes', verifyToken, async (req, res) => {
             const email = req.query.email
-            console.log(email)
+            // console.log(email)
             const query = { wisherEmail: email }
             const result = await wishlistCollection.find(query).toArray()
             res.send(result)
@@ -374,7 +374,7 @@ async function run() {
             const wishId = offeredInfo.wishId;
             const query = { _id: new ObjectId(wishId) }
             const deletedResult = await wishlistCollection.deleteOne(query)
-            console.log(wishId)
+            // console.log(wishId)
             res.send(result)
         })
 
@@ -390,9 +390,9 @@ async function run() {
         app.get('/getOfferings', verifyToken, verifyAgent, async (req, res) => {
             const agentEmail = req.query.agentEmail;
             const query = { agentEmail: agentEmail }
-            console.log(agentEmail)
+            // console.log(agentEmail)
             const result = await offeringCollection.find(query).toArray()
-            console.log(result)
+            // console.log(result)
             res.send(result)
         })
 
@@ -401,7 +401,7 @@ async function run() {
             const id = req.params.id;
 
             const { status } = req.body;
-            console.log(status)
+            // console.log(status)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -414,7 +414,7 @@ async function run() {
         // Accept Offering
         app.patch('/acceptOffering', verifyToken, verifyAgent, async (req, res) => {
             const { id, status, propertyId } = req.body;
-            console.log(propertyId)
+            // console.log(propertyId)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
@@ -449,20 +449,66 @@ async function run() {
         })
         //  set status after payment of offering collection
         app.patch('/after-payment-status', verifyToken, async (req, res) => {
-            const {  status, id,transactionId } = req.body;
+            const { status, id, transactionId } = req.body;
 
-            console.log(status)
+            // console.log(status)
 
             const query = { _id: new ObjectId(id) }
             const updateDoc = {
                 $set: {
-                     status: status,
-                     transactionId:transactionId,
-                     },
+                    status: status,
+                    transactionId: transactionId,
+                },
             }
             const result = await offeringCollection.updateOne(query, updateDoc)
             res.send(result)
         })
+
+        // updaate property selling status after payment
+
+        // update a rejected status of a offering
+        app.patch('/update-selling-status/:propertyId', verifyToken, async (req, res) => {
+            const propertyId = req.params.propertyId;
+
+            const { selling_status } = req.body;
+            console.log(selling_status)
+
+            const query = { _id: new ObjectId(propertyId) }
+            const updateDoc = {
+                $set: { selling_status: selling_status },
+            }
+            const result = await propertyCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        // get agent specific sold properties
+        app.get('/my-sold-properties', verifyToken, verifyAgent, async (req, res) => {
+            const agentEmail = req.query.agentEmail;
+            const query = { agentEmail: agentEmail }
+            const result = await paymentsCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // agent statistics
+        app.get('/agent-statistics', verifyToken, verifyAgent, async (req, res) => {
+            const agentEmail = req.query.agentEmail
+
+            const propertySold = await paymentsCollection.find(
+                { agentEmail: agentEmail },
+                { projection: { offerPrice: 1 } }
+            ).toArray()
+
+            const totalProperties = await propertyCollection.countDocuments({ agentEmail: agentEmail })
+
+            const totalPrice = propertySold.reduce((sum, payment) => sum + payment.offerPrice, 0)
+
+            res.send({
+                soldProperties : propertySold.length,
+                totalPrice,
+                totalProperties
+            })
+        })
+
 
 
         // Send a ping to confirm a successful connection
