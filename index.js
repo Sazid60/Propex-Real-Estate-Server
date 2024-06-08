@@ -214,7 +214,12 @@ async function run() {
 
         // get all the properties
         app.get('/properties', verifyToken, async (req, res) => {
-            const result = await propertyCollection.find().toArray()
+            const search = req.query.search
+            let query = {}
+            if (search) {
+                query = { title: { $regex: search, $options: 'i' } }
+            }
+            const result = await propertyCollection.find(query).toArray()
             res.send(result)
         })
 
@@ -503,7 +508,7 @@ async function run() {
             const totalPrice = propertySold.reduce((sum, payment) => sum + payment.offerPrice, 0)
 
             res.send({
-                soldProperties : propertySold.length,
+                soldProperties: propertySold.length,
                 totalPrice,
                 totalProperties
             })
