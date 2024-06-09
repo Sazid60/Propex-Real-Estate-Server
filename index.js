@@ -29,7 +29,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const usersCollection = client.db("Propex").collection("users")
         const propertyCollection = client.db("Propex").collection("properties")
@@ -37,6 +37,7 @@ async function run() {
         const wishlistCollection = client.db("Propex").collection("wishlist")
         const offeringCollection = client.db("Propex").collection("offerings")
         const paymentsCollection = client.db("Propex").collection("payments")
+        const advertiseCollection = client.db("Propex").collection("advertisements")
 
 
         // jwt related API
@@ -195,6 +196,7 @@ async function run() {
             // TODO: delete from Offered Collection and Wishlist
             // const deletedOffered = await offeringCollection.deleteMany({ agentEmail: email })
             const deletedWishlist = await wishlistCollection.deleteMany({ agentEmail: email })
+            const deleteAdvertisements = await advertiseCollection.deleteMany({ agentEmail: email })
             res.send(result)
         })
 
@@ -224,8 +226,12 @@ async function run() {
         })
 
         // get all the properties
-        app.get('/advertisedProperties', async (req, res) => {
-            const result = await propertyCollection.find().toArray()
+        // app.get('/advertisedProperties', async (req, res) => {
+        //     const result = await propertyCollection.find().toArray()
+        //     res.send(result)
+        // })
+        app.get('/advertisements', async (req, res) => {
+            const result = await advertiseCollection.find().toArray()
             res.send(result)
         })
 
@@ -284,6 +290,8 @@ async function run() {
         })
 
         // advertise a property
+
+        // update the home data
         app.patch('/property/advertise/:id', verifyToken, verifyAdmin, async (req, res) => {
             const id = req.params.id
             // console.log(id)
@@ -295,6 +303,28 @@ async function run() {
                 $set: { advertised: advertised },
             }
             const result = await propertyCollection.updateOne(query, updateDoc)
+            res.send(result)
+        })
+
+        //  add in advertise database
+        app.post('/propertyAdvertise', verifyToken, verifyAdmin, async (req, res) => {
+            const advertisedProperty = req.body;
+            const result = await advertiseCollection.insertOne(advertisedProperty)
+            res.send(result)
+        })
+
+        // update selling status after payment
+        app.patch('/adRemove/:propertyId', verifyToken, async (req, res) => {
+            const propertyId = req.params.propertyId;
+
+            const { selling_status } = req.body;
+            // console.log(selling_status)
+
+            const query = { propertyId: propertyId }
+            const updateDoc = {
+                $set: { selling_status: selling_status },
+            }
+            const result = await advertiseCollection.updateOne(query, updateDoc)
             res.send(result)
         })
 
@@ -341,8 +371,16 @@ async function run() {
         // all to wishlist
         app.post('/wishlist-property', verifyToken, async (req, res) => {
             const wished_property = req.body;
-            const result = await wishlistCollection.insertOne(wished_property)
-            res.send(result)
+            const { propertyId, wisherEmail } = req.body;
+            const existingEntry = await wishlistCollection.findOne({ propertyId : propertyId, wisherEmail:wisherEmail });
+
+            if (existingEntry) {
+                return res.send({ message: 'Property already added in wishlist' });
+            }
+            else {
+                const result = await wishlistCollection.insertOne(wished_property)
+                res.send(result)
+            }
         })
 
         // get user specific wishlist
@@ -476,7 +514,7 @@ async function run() {
             const propertyId = req.params.propertyId;
 
             const { selling_status } = req.body;
-            console.log(selling_status)
+            // console.log(selling_status)
 
             const query = { _id: new ObjectId(propertyId) }
             const updateDoc = {
@@ -517,8 +555,8 @@ async function run() {
 
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
